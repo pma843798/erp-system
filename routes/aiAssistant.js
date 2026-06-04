@@ -34,7 +34,8 @@ router.post('/ask', async (req, res) => {
 
     try {
 
-        const { prompt } = req.body;
+        // ✅ Frontend se history bhi le rahe hain
+        const { prompt, history = [] } = req.body;
 
         if (!prompt || !prompt.trim()) {
             return res.status(400).json({
@@ -43,62 +44,44 @@ router.post('/ask', async (req, res) => {
         }
 
         // ======================================================
-        // 📦 FETCH CLEAN DATABASE DATA
+        // 📦 FETCH CLEAN DATABASE DATA (Filtered via History Context)
         // ======================================================
 
- // ======================================================
-// 📦 FETCH CLEAN DATABASE DATA
-// ======================================================
+        const lastFewMessages = history.slice(-3).map(m => m.text).join(' ');
+        const textToSearch = `${prompt} ${lastFewMessages}`;
+        
+        const keywords = textToSearch.split(/[\s,]+/).filter(w => w.length > 2);
+        let query = {};
+        
+        if (keywords.length > 0) {
+             const regexPattern = keywords.map(k => `(${k})`).join('|');
+             query = {
+                 $or: [
+                     { styleNo: { $regex: regexPattern, $options: 'i' } },
+                     { catNo: { $regex: regexPattern, $options: 'i' } }
+                 ]
+             };
+        }
 
-const rawData = await Tracker.find({}).lean();
+        // ⚠️ Sirf zaroori entries hi aayengi (limit lagayi hai)
+        const rawData = await Tracker.find(query).limit(50).lean();
 
-const dbData = rawData.map(item => ({
-
-    // ======================================================
-    // BASIC DETAILS
-    // ======================================================
-
-    styleNo: item.styleNo || '',
-
-    catNo: item.catNo || '',
-
-    factoryFOB: item.factoryFOB || '',
-
-    // ======================================================
-    // PLANNING DATES
-    // ======================================================
-
-    plannedFPT: item.plannedFPT || '',
-
-    plannedGPT: item.plannedGPT || '',
-
-    labdipPlannedDate: item.labdipPlannedDate || '',
-
-    photoSamplePlannedDate: item.photoSamplePlannedDate || '',
-
-    gsmColorLotsPlanned: item.gsmColorLotsPlanned || '',
-
-    // ======================================================
-    // STATUS FIELDS
-    // ======================================================
-
-    approvalStatus: item.approvalStatus || 'Pending',
-
-    pendingStatus: item.pendingStatus || 'In Progress',
-
-    buyerApproval: item.buyerApproval || 'Pending',
-
-    priority: item.priority || 'Medium',
-
-    // ======================================================
-    // OTHER
-    // ======================================================
-
-    remark: item.remark || '',
-
-    updatedAt: item.updatedAt || ''
-
-}));
+        const dbData = rawData.map(item => ({
+            styleNo: item.styleNo || '',
+            catNo: item.catNo || '',
+            factoryFOB: item.factoryFOB || '',
+            plannedFPT: item.plannedFPT || '',
+            plannedGPT: item.plannedGPT || '',
+            labdipPlannedDate: item.labdipPlannedDate || '',
+            photoSamplePlannedDate: item.photoSamplePlannedDate || '',
+            gsmColorLotsPlanned: item.gsmColorLotsPlanned || '',
+            approvalStatus: item.approvalStatus || 'Pending',
+            pendingStatus: item.pendingStatus || 'In Progress',
+            buyerApproval: item.buyerApproval || 'Pending',
+            priority: item.priority || 'Medium',
+            remark: item.remark || '',
+            updatedAt: item.updatedAt || ''
+        }));
 
         // ======================================================
         // 🧠 SYSTEM PROMPT
@@ -276,23 +259,28 @@ Generate the most accurate, intelligent, professional, and concise response poss
 `;
 
         // ======================================================
-        // 🤖 GENERATE AI RESPONSE
+        // 🤖 GENERATE AI RESPONSE (WITH HISTORY)
         // ======================================================
 
+        // Purani history ko Gemini ke role format mein map kiya
+        const geminiContents = history
+            .filter(msg => !msg.text.includes('Welcome to PMA Smart System'))
+            .map(msg => ({
+                role: msg.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: msg.text }]
+            }));
+
+        // Latest prompt (with system prompt & DB) ko history ke end me add kiya
+        geminiContents.push({
+            role: "user",
+            parts: [{ text: systemPrompt }]
+        });
+
         const result = await model.generateContent({
-            contents: [
-                {
-                    role: "user",
-                    parts: [
-                        {
-                            text: systemPrompt
-                        }
-                    ]
-                }
-            ],
+            contents: geminiContents,
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 800
+                maxOutputTokens: 2048 // ⚠️ Isko badhaya hai taaki message kate na
             }
         });
 
