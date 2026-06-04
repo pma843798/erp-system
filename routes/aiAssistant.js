@@ -46,7 +46,13 @@ router.post('/ask', async (req, res) => {
         // 📦 FETCH CLEAN DATABASE DATA
         // ======================================================
 
- const dbData = rawData.map(item => ({
+ // ======================================================
+// 📦 FETCH CLEAN DATABASE DATA
+// ======================================================
+
+const rawData = await Tracker.find({}).lean();
+
+const dbData = rawData.map(item => ({
 
     // ======================================================
     // BASIC DETAILS
