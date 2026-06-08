@@ -1,5 +1,3 @@
-// server/routes/aiAssistant.js
-
 require('dotenv').config();
 
 const express = require('express');
@@ -9,9 +7,6 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const Tracker = require('../models/Tracker');
 
-// ======================================================
-// ✅ API KEY
-// ======================================================
 
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 
@@ -21,20 +16,15 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// ✅ STABLE MODEL
 const model = genAI.getGenerativeModel({
     model: "gemini-flash-latest"
 });
 
-// ======================================================
-// 🚀 AI ROUTE
-// ======================================================
 
 router.post('/ask', async (req, res) => {
 
     try {
 
-        // ✅ Frontend se history bhi le rahe hain
         const { prompt, history = [] } = req.body;
 
         if (!prompt || !prompt.trim()) {
@@ -43,9 +33,6 @@ router.post('/ask', async (req, res) => {
             });
         }
 
-        // ======================================================
-        // 📦 FETCH CLEAN DATABASE DATA (Filtered via History Context)
-        // ======================================================
 
         const lastFewMessages = history.slice(-3).map(m => m.text).join(' ');
         const textToSearch = `${prompt} ${lastFewMessages}`;
@@ -63,7 +50,6 @@ router.post('/ask', async (req, res) => {
              };
         }
 
-        // ⚠️ Sirf zaroori entries hi aayengi (limit lagayi hai)
         const rawData = await Tracker.find(query).limit(50).lean();
 
         const dbData = rawData.map(item => ({
@@ -83,9 +69,6 @@ router.post('/ask', async (req, res) => {
             updatedAt: item.updatedAt || ''
         }));
 
-        // ======================================================
-        // 🧠 SYSTEM PROMPT
-        // ======================================================
 
         const systemPrompt = `
 You are PMA Smart System — a futuristic AI assistant for production management and planning.
@@ -258,11 +241,6 @@ ${prompt}
 Generate the most accurate, intelligent, professional, and concise response possible using ONLY PMA database records.
 `;
 
-        // ======================================================
-        // 🤖 GENERATE AI RESPONSE (WITH HISTORY)
-        // ======================================================
-
-        // Purani history ko Gemini ke role format mein map kiya
         const geminiContents = history
             .filter(msg => !msg.text.includes('Welcome to PMA Smart System'))
             .map(msg => ({
@@ -270,7 +248,6 @@ Generate the most accurate, intelligent, professional, and concise response poss
                 parts: [{ text: msg.text }]
             }));
 
-        // Latest prompt (with system prompt & DB) ko history ke end me add kiya
         geminiContents.push({
             role: "user",
             parts: [{ text: systemPrompt }]
@@ -280,7 +257,7 @@ Generate the most accurate, intelligent, professional, and concise response poss
             contents: geminiContents,
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 2048 // ⚠️ Isko badhaya hai taaki message kate na
+                maxOutputTokens: 2048 
             }
         });
 
@@ -288,9 +265,6 @@ Generate the most accurate, intelligent, professional, and concise response poss
 
         const text = response.text();
 
-        // ======================================================
-        // ✅ SEND RESPONSE
-        // ======================================================
 
         return res.status(200).json({
             answer: text

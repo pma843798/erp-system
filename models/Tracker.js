@@ -17,28 +17,27 @@ const historySchema = new mongoose.Schema({
 
 const trackerSchema = new mongoose.Schema({
   
-  // BASIC DETAILS
+ 
   catNo: String,
   styleNo: {
     type: String,
     required: true
   },
 
-  // DATE FIELDS & RED FIELD STATUSES
   factoryFOB: Date,
   vendorPhotoShootDate: Date,
 
   labdipQualityDeskloomDue: Date,
   labdipPlannedDate: Date,
   labdipPlannedStatus: { type: String, default: "Pending" },
-  // NEW: approval fields for Labdip
+
   labdipApprovedDate: Date,
   labdipApprovedBy: String,
 
   photoSampleDue: Date,
   photoSamplePlannedDate: Date,
   photoSamplePlannedStatus: { type: String, default: "Pending" },
-  // NEW: approval fields for Photo Sample
+
   photoSampleApprovedDate: Date,
   photoSampleApprovedBy: String,
 
@@ -46,20 +45,20 @@ const trackerSchema = new mongoose.Schema({
 
   plannedFPT: Date,
   plannedFPTStatus: { type: String, default: "Pending" },
-  // NEW: approval fields for FPT
+ 
   plannedFPTApprovedDate: Date,
   plannedFPTApprovedBy: String,
 
   plannedGPT: Date,
   plannedGPTStatus: { type: String, default: "Pending" },
-  // NEW: approval fields for GPT
+
   plannedGPTApprovedDate: Date,
   plannedGPTApprovedBy: String,
 
   gsmColorLotsDue: Date,
   gsmColorLotsPlanned: Date,
   gsmColorLotsPlannedStatus: { type: String, default: "Pending" },
-  // NEW: approval fields for GSM/Color
+
   gsmColorLotsApprovedDate: Date,
   gsmColorLotsApprovedBy: String,
 
@@ -69,7 +68,7 @@ const trackerSchema = new mongoose.Schema({
 
 }, {
   timestamps: true,
-  strict: false   // Allows dynamic custom columns
+  strict: false  
 });
 
 module.exports = mongoose.model('Tracker', trackerSchema);

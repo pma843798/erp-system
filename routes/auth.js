@@ -5,12 +5,10 @@ const { protect, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-// JWT generator
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// POST /api/auth/login – Login user
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -31,7 +29,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register – Admin new user create karega (protected, admin only)
 router.post('/register', protect, adminOnly, async (req, res) => {
   const { name, email, password, role } = req.body;
   try {
@@ -47,13 +44,11 @@ router.post('/register', protect, adminOnly, async (req, res) => {
   }
 });
 
-// GET /api/auth/users – Sab users laao (admin only)
 router.get('/users', protect, adminOnly, async (req, res) => {
   const users = await User.find({}).select('-password');
   res.json(users);
 });
 
-// DELETE /api/auth/users/:id – User delete karo (admin only)
 router.delete('/users/:id', protect, adminOnly, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
