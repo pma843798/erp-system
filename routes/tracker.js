@@ -129,24 +129,39 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-// DELETE history for a specific field (Admin only)
+// DELETE history for a specific field (Admin only) – now supports selective deletion
 router.delete('/history/:id', protect, async (req, res) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admin can delete history' });
   }
   try {
-    const { field } = req.body;
-    const entry = await Tracker.findById(req.params.id);
-    if (!entry) return res.status(404).json({ message: 'Entry not found' });
+    const { field, historyIds } = req.body;
+    const entryId = req.params.id;
 
-    if (field) {
-      entry.history = entry.history.filter(h => h.field !== field);
-    } else {
-      entry.history = [];
+    if (!entryId) {
+      return res.status(400).json({ message: 'Entry ID required' });
     }
 
-    await entry.save();
-    res.json({ message: 'History cleared successfully' });
+    // 1. If historyIds array is provided and non‑empty → delete specific history items
+    if (historyIds && Array.isArray(historyIds) && historyIds.length > 0) {
+      await Tracker.updateOne(
+        { _id: entryId },
+        { $pull: { history: { _id: { $in: historyIds } } } }
+      );
+      return res.json({ message: `Deleted ${historyIds.length} selected history entries` });
+    }
+    
+    // 2. Otherwise, if field is provided → delete all history for that field
+    if (field) {
+      await Tracker.updateOne(
+        { _id: entryId },
+        { $pull: { history: { field } } }
+      );
+      return res.json({ message: `All history cleared for field: ${field}` });
+    }
+
+    // 3. If neither is provided → bad request
+    return res.status(400).json({ message: 'Either field or historyIds must be provided' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
