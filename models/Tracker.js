@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const historySchema = new mongoose.Schema({
   field: String,
@@ -6,75 +6,84 @@ const historySchema = new mongoose.Schema({
   newValue: mongoose.Schema.Types.Mixed,
   changedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: "User",
   },
   role: String,
   changedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
 });
 
-const mongoose = require('mongoose');
+const trackerSchema = new mongoose.Schema(
+  {
+    catNo: String,
+    styleNo: {
+      type: String,
+      required: true,
+    },
 
-const historySchema = new mongoose.Schema({
-  field: String,
-  oldValue: mongoose.Schema.Types.Mixed,
-  newValue: mongoose.Schema.Types.Mixed,
-  changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  role: String,
-  changedAt: { type: Date, default: Date.now },
-});
+    factoryFOB: Date,
+    vendorPhotoShootDate: Date,
 
-const trackerSchema = new mongoose.Schema({
-  catNo: String,
-  styleNo: { type: String, required: true },
+    labdipQualityDeskloomDue: Date,
+    labdipPlannedDate: Date,
+    labdipPlannedStatus: {
+      type: String,
+      default: "Pending",
+    },
+    labdipApprovedDate: Date,
+    labdipApprovedBy: String,
 
-  factoryFOB: Date,
-  vendorPhotoShootDate: Date,
+    // NEW
+    fabInHousePlannedDate: Date,
 
-  labdipQualityDeskloomDue: Date,
-  labdipPlannedDate: Date,
-  labdipPlannedStatus: { type: String, default: "Pending" },
-  labdipApprovedDate: Date,
-  labdipApprovedBy: String,
+    photoSampleDue: Date,
+    photoSamplePlannedDate: Date,
+    photoSamplePlannedStatus: {
+      type: String,
+      default: "Pending",
+    },
+    photoSampleApprovedDate: Date,
+    photoSampleApprovedBy: String,
 
-  // ✅ NEW
-  fabInHousePlannedDate: Date,
+    // NEW
+    fptDueDate: Date,
+    gptDueDate: Date,
 
-  photoSampleDue: Date,
-  photoSamplePlannedDate: Date,
-  photoSamplePlannedStatus: { type: String, default: "Pending" },
-  photoSampleApprovedDate: Date,
-  photoSampleApprovedBy: String,
+    plannedFPT: Date,
+    plannedFPTStatus: {
+      type: String,
+      default: "Pending",
+    },
+    plannedFPTApprovedDate: Date,
+    plannedFPTApprovedBy: String,
 
-  // ✅ NEW
-  fptDueDate: Date,
-  gptDueDate: Date,
+    plannedGPT: Date,
+    plannedGPTStatus: {
+      type: String,
+      default: "Pending",
+    },
+    plannedGPTApprovedDate: Date,
+    plannedGPTApprovedBy: String,
 
-  plannedFPT: Date,
-  plannedFPTStatus: { type: String, default: "Pending" },
-  plannedFPTApprovedDate: Date,
-  plannedFPTApprovedBy: String,
+    gsmColorLotsDue: Date,
+    gsmColorLotsPlanned: Date,
+    gsmColorLotsPlannedStatus: {
+      type: String,
+      default: "Pending",
+    },
+    gsmColorLotsApprovedDate: Date,
+    gsmColorLotsApprovedBy: String,
 
-  plannedGPT: Date,
-  plannedGPTStatus: { type: String, default: "Pending" },
-  plannedGPTApprovedDate: Date,
-  plannedGPTApprovedBy: String,
+    remark: String,
 
-  gsmColorLotsDue: Date,
-  gsmColorLotsPlanned: Date,
-  gsmColorLotsPlannedStatus: { type: String, default: "Pending" },
-  gsmColorLotsApprovedDate: Date,
-  gsmColorLotsApprovedBy: String,
+    history: [historySchema],
+  },
+  {
+    timestamps: true,
+    strict: false,
+  }
+);
 
-  remark: String,
-  history: [historySchema],
-}, {
-  timestamps: true,
-  strict: false   // waise bhi hai, safe
-});
-
-module.exports = mongoose.model('Tracker', trackerSchema);
-
-module.exports = mongoose.model('Tracker', trackerSchema);
+module.exports = mongoose.model("Tracker", trackerSchema);
