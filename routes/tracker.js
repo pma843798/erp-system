@@ -4,6 +4,7 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Vendor editable fields (fabInHousePlannedDate allowed, fptDueDate/gptDueDate NOT allowed)
 const vendorEditableFields = [
   'labdipPlannedDate',
   'photoSamplePlannedDate',
@@ -22,7 +23,9 @@ const vendorEditableFields = [
   'buyerApproval',
   'priority',
 
-  'remark'
+  'remark',
+
+  'fabInHousePlannedDate',   // vendor set kar sakta hai
 ];
 
 const getComparableValue = (val) => {
@@ -42,7 +45,7 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// ✅ NEW: GET single entry by ID (used for refreshing history after selective deletion)
+// GET single entry by ID
 router.get('/:id', protect, async (req, res) => {
   try {
     const entry = await Tracker.findById(req.params.id)
@@ -54,7 +57,7 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// POST (Admin & PMA only)
+// POST (Admin & PMA only) – no extra PMA restrictions
 router.post('/', protect, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'pma') {
     return res.status(403).json({ message: 'Only Admin or PMA can create entries' });
@@ -67,7 +70,7 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// PUT – Update with improved auto‑approval
+// PUT – Update with auto‑approval
 router.put('/:id', protect, async (req, res) => {
   try {
     if (!req.user) {
@@ -79,7 +82,7 @@ router.put('/:id', protect, async (req, res) => {
 
     const updates = req.body;
 
-    // Auto‑set approvedBy/date ONLY if not already provided by user
+    // Auto‑set approvedBy/date
     const approvalMap = {
       labdipPlannedStatus:      { by: 'labdipApprovedBy',      dt: 'labdipApprovedDate' },
       photoSamplePlannedStatus: { by: 'photoSampleApprovedBy', dt: 'photoSampleApprovedDate' },
@@ -102,7 +105,7 @@ router.put('/:id', protect, async (req, res) => {
     const historyEntries = [];
 
     for (let field in updates) {
-      // Vendor permission check
+      // Vendor permission check (only vendor restricted, PMA/Admin unrestricted)
       if (req.user.role === 'vendor' && !vendorEditableFields.includes(field)) {
         return res.status(403).json({ message: `Vendor cannot edit field: ${field}` });
       }
@@ -141,7 +144,7 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-// DELETE history – now supports selective deletion (by historyIds) or clearing all for a field
+// DELETE history (Admin only)
 router.delete('/history/:id', protect, async (req, res) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admin can delete history' });
@@ -154,7 +157,6 @@ router.delete('/history/:id', protect, async (req, res) => {
       return res.status(400).json({ message: 'Entry ID required' });
     }
 
-    // If historyIds array is provided and non‑empty → delete specific history items
     if (historyIds && Array.isArray(historyIds) && historyIds.length > 0) {
       await Tracker.updateOne(
         { _id: entryId },
@@ -163,7 +165,6 @@ router.delete('/history/:id', protect, async (req, res) => {
       return res.json({ message: `Deleted ${historyIds.length} selected history entries` });
     }
     
-    // Otherwise, if field is provided → delete all history for that field
     if (field) {
       await Tracker.updateOne(
         { _id: entryId },
@@ -172,7 +173,6 @@ router.delete('/history/:id', protect, async (req, res) => {
       return res.json({ message: `All history cleared for field: ${field}` });
     }
 
-    // If neither is provided → bad request
     return res.status(400).json({ message: 'Either field or historyIds must be provided' });
   } catch (error) {
     res.status(500).json({ message: error.message });
